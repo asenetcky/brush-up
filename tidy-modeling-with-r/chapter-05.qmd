@@ -1,0 +1,29 @@
+---
+title: "Chapter 5 - Spending our Data"
+format: 
+    html:
+        embed-resources: true
+---
+
+
+Chapter starts out with introducing the idea of a "data budget". The authors argue there is a careful
+balance between parameter estimation, model selection and tuning, and performance assessment.  With the
+finite data available, folks need to be careful 'spending' data for each of these tasks.  If data is 'reused'
+folks risk compounding biases and methodological errors, thus decreasing empiral validation.
+
+## Common methods for splitting data
+
+- split data into two distinct sets: training and testing.
+    - training is usually majority of the data
+        - a sandbox for model building and fitting etc...
+    - testing is the rest
+        - test is the final yard stick
+            - should only be looked at **once** otherwise it's a part of
+            the modeling process.
+
+```{r setup}
+library(tidymodels)
+tidymodels_prefer()
+
+ames <- nanoparquet::read_parquet(fs::path_wd("data", "ames", ext = "parquet"))
+```
