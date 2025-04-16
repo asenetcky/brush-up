@@ -1,0 +1,13 @@
+---
+title: "Cahpter 7 - A model workflow"
+format: 
+    html:
+        embed-resources: true
+---
+
+```{r setup}
+here::i_am(fs::path("tidy-modeling-with-r", "chapter-07.qmd"))
+library(here)
+source(here("tidy-modeling-with-r", "setup.R"))
+
+```

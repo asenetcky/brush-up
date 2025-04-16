@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Chapter 5 - Spending our Data</title>
+<title>Cahpter 6 - Fitting models with parsnip</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -3087,7 +3087,7 @@ vertical-align: -.125em;
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Chapter 5 - Spending our Data</h1>
+<h1 class="title">Cahpter 6 - Fitting models with parsnip</h1>
 </div>
 
 
@@ -3104,27 +3104,13 @@ vertical-align: -.125em;
 </header>
 
 
-<p>Chapter starts out with introducing the idea of a “data budget”. The authors argue there is a careful balance between parameter estimation, model selection and tuning, and performance assessment. With the finite data available, folks need to be careful ‘spending’ data for each of these tasks. If data is ‘reused’ folks risk compounding biases and methodological errors, thus decreasing empiral validation.</p>
-<section id="common-methods-for-splitting-data" class="level2">
-<h2 class="anchored" data-anchor-id="common-methods-for-splitting-data">Common methods for splitting data</h2>
-<ul>
-<li>split data into two distinct sets: training and testing.
-<ul>
-<li>training is usually majority of the data
-<ul>
-<li>a sandbox for model building and fitting etc…</li>
-</ul></li>
-<li>testing is the rest
-<ul>
-<li>test is the final yard stick
-<ul>
-<li>should only be looked at <strong>once</strong> otherwise it’s a part of the modeling process.</li>
-</ul></li>
-</ul></li>
-</ul></li>
-</ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidymodels)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>here<span class="sc">::</span><span class="fu">i_am</span>(fs<span class="sc">::</span><span class="fu">path</span>(<span class="st">&quot;tidy-modeling-with-r&quot;</span>, <span class="st">&quot;chapter-07.qmd&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>here() starts at C:/Users/asene.SENETCKYA/repos/brush-up</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">&quot;tidy-modeling-with-r&quot;</span>, <span class="st">&quot;setup.R&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>── Attaching packages ────────────────────────────────────── tidymodels 1.3.0 ──</code></pre>
 </div>
@@ -3145,14 +3131,11 @@ vertical-align: -.125em;
 ✖ dplyr::lag()     masks stats::lag()
 ✖ recipes::step()  masks stats::step()</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
 ✔ forcats   1.0.0     ✔ readr     2.1.5
-✔ lubridate 1.9.4     ✔ stringr   1.5.1</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✔ lubridate 1.9.4     ✔ stringr   1.5.1
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 ✖ readr::col_factor() masks scales::col_factor()
 ✖ purrr::discard()    masks scales::discard()
 ✖ dplyr::filter()     masks stats::filter()
@@ -3161,113 +3144,283 @@ vertical-align: -.125em;
 ✖ readr::spec()       masks yardstick::spec()
 ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tidymodels_prefer</span>()</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">interactive</span>()) {</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  fs<span class="sc">::</span><span class="fu">dir_ls</span>(fs<span class="sc">::</span><span class="fu">path_wd</span>(<span class="st">&quot;funs&quot;</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    purrr<span class="sc">::</span><span class="fu">walk</span>(</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        \(file) {</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>            rlang<span class="sc">::</span><span class="fu">inform</span>(glue<span class="sc">::</span><span class="fu">glue</span>(<span class="st">&quot;Sourcing: {file}&quot;</span>))</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>            <span class="fu">source</span>(file)</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    )  </span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data</span>(ames)</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    ames <span class="ot">&lt;-</span> ames <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Sale_Price =</span> <span class="fu">log10</span>(Sale_Price))</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</section>
-<section id="simple-random-sample" class="level2">
-<h2 class="anchored" data-anchor-id="simple-random-sample">simple random sample</h2>
-<p>going to use the <code>rsample</code> package to split the data up into the two groups.</p>
+<p>Authors go into detail about <code>parsnip</code> package. which itself is a meta package like <code>tidymodels</code> and <code>tidyverse</code>.</p>
+<p>they walk through an example with the standard expected packages for a standard linear regression usecase. then they start to walk through the tidymodels approach detailed below:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set seed to match book</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">501</span>)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>ames_split <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">initial_split</span>(ames, <span class="at">prop =</span> <span class="fl">0.80</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>ames_split</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>parsnip<span class="sc">::</span><span class="fu">linear_reg</span>() <span class="sc">%&gt;%</span> parsnip<span class="sc">::</span><span class="fu">set_engine</span>(<span class="st">&quot;lm&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>parsnip<span class="sc">::</span><span class="fu">linear_reg</span>() <span class="sc">%&gt;%</span> parsnip<span class="sc">::</span><span class="fu">set_engine</span>(<span class="st">&quot;glmnet&quot;</span>) </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>parsnip<span class="sc">::</span><span class="fu">linear_reg</span>() <span class="sc">%&gt;%</span> parsnip<span class="sc">::</span><span class="fu">set_engine</span>(<span class="st">&quot;stan&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>so parsnip is an abstraction layer across the model landscape. you can actually translate what parsnip is doing and see how it is translating parsnip semantics to the engine code beneath. reminds me of <code>dbplyr::translate_sql()</code> or whatever that function is…</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">linear_reg</span>() <span class="sc">%&gt;%</span> <span class="fu">set_engine</span>(<span class="st">&quot;lm&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">translate</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>&lt;Training/Testing/Total&gt;
-&lt;2344/586/2930&gt;</code></pre>
+<pre><code>Linear Regression Model Specification (regression)
+
+Computational engine: lm 
+
+Model fit template:
+stats::lm(formula = missing_arg(), data = missing_arg(), weights = missing_arg())</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ^ only contains partitioning information</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># apply more funs to get the data</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>ames_train <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">training</span>(ames_split)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>ames_test <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">testing</span>(ames_split)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(ames_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">linear_reg</span>(<span class="at">penalty =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">set_engine</span>(<span class="st">&quot;glmnet&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">translate</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 2344   74</code></pre>
+<pre><code>Linear Regression Model Specification (regression)
+
+Main Arguments:
+  penalty = 1
+
+Computational engine: glmnet 
+
+Model fit template:
+glmnet::glmnet(x = missing_arg(), y = missing_arg(), weights = missing_arg(), 
+    family = &quot;gaussian&quot;)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">linear_reg</span>() <span class="sc">%&gt;%</span> <span class="fu">set_engine</span>(<span class="st">&quot;stan&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">translate</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear Regression Model Specification (regression)
+
+Computational engine: stan 
+
+Model fit template:
+rstanarm::stan_glm(formula = missing_arg(), data = missing_arg(), 
+    weights = missing_arg(), family = stats::gaussian, refresh = 0)</code></pre>
 </div>
 </div>
-<p>authors go on to talk about how simple random sampling is good in many cases, but not all. if the prevalence of categoricals is out of balance, there may be an inbalance in the test/train datasets. use stratified in that case.</p>
-<p>Authors state that you can use artificical quartiles and then conduct stratified sampling x 4.</p>
+<p>enough of the birdseye view - let’s model the ames data</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>quartiles <span class="ot">&lt;-</span> <span class="fu">summary</span>(ames<span class="sc">$</span>Sale_Price)</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>ames <span class="sc">|&gt;</span> </span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_density</span>(<span class="fu">aes</span>(Sale_Price)) <span class="sc">+</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> quartiles[[<span class="dv">2</span>]]) <span class="sc">+</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> quartiles[[<span class="dv">3</span>]]) <span class="sc">+</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> quartiles[[<span class="dv">5</span>]]) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img role="img" src="data:image/png;base64,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" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># def an easier way to do that.... but I forget :D</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="stratified-sampling" class="level2">
-<h2 class="anchored" data-anchor-id="stratified-sampling">stratified sampling</h2>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">502</span>)</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>ames_split <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">initial_split</span>(ames, <span class="at">prop =</span> <span class="fl">0.80</span>, <span class="at">strata =</span> Sale_Price)</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>ames_train <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">training</span>(ames_split)</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>ames_test <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">testing</span>(ames_split)</span>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>lm_model <span class="ot">&lt;-</span> </span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">linear_reg</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_engine</span>(<span class="st">&quot;lm&quot;</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># so I guess we set up the model beforehand - like a recipe?</span></span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(ames_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>lm_form_fit <span class="ot">&lt;-</span> </span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    lm_model <span class="sc">|&gt;</span> </span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># author notes that we should remember that we pre-logged the data</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fit</span>(Sale_Price <span class="sc">~</span> Longitude <span class="sc">+</span> Latitude, <span class="at">data =</span> ames_train)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>lm_xy_fit <span class="ot">&lt;-</span> </span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    lm_model <span class="sc">|&gt;</span> </span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fit_xy</span>(</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">x =</span> ames_train <span class="sc">|&gt;</span> <span class="fu">select</span>(Longitude, Latitude),</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">y =</span> ames_train <span class="sc">|&gt;</span> <span class="fu">pull</span>(Sale_Price)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    lm_form_fit</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 2342   74</code></pre>
+<pre><code>parsnip model object
+
+
+Call:
+stats::lm(formula = Sale_Price ~ Longitude + Latitude, data = data)
+
+Coefficients:
+(Intercept)    Longitude     Latitude  
+ -128056769      -807916      1250927  </code></pre>
 </div>
-</div>
-<p>looks good. only a single column can be used to stratify per the authors. they also note there is very little downside to using stratified sampling.</p>
-<p>what about when we don’t want random sampling?&gt;</p>
-<p>with time series it is common to use the most recent data as the test set. so <code>rsample</code> has <code>initial_time_split()</code>. but prop, instead, says what proportion of the first bits of data should be training - assuming data is pre sorted.</p>
-</section>
-<section id="what-about-validation" class="level2">
-<h2 class="anchored" data-anchor-id="what-about-validation">what about validation?</h2>
-<p>if someone wanted a validation set they may do something like this:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 60% train, 20% validate 20% test</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>ames_val_split <span class="ot">&lt;-</span> rsample<span class="sc">::</span><span class="fu">initial_validation_split</span>(ames, <span class="at">prop =</span> <span class="fu">c</span>(<span class="fl">0.6</span>, <span class="fl">0.2</span>))</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>ames_val_split</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>    lm_xy_fit</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>&lt;Training/Validation/Testing/Total&gt;
-&lt;1758/586/586/2930&gt;</code></pre>
+<pre><code>parsnip model object
+
+
+Call:
+stats::lm(formula = ..y ~ ., data = data)
+
+Coefficients:
+(Intercept)    Longitude     Latitude  
+ -128056769      -807916      1250927  </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>ames_train <span class="ot">&lt;-</span> <span class="fu">training</span>(ames_val_split)</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>ames_test <span class="ot">&lt;-</span> <span class="fu">testing</span>(ames_val_split)</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>ames_val <span class="ot">&lt;-</span> <span class="fu">validation</span>(ames_val_split)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</section>
-<section id="other-considerations" class="level2">
-<h2 class="anchored" data-anchor-id="other-considerations">other considerations</h2>
-<p>watch out for data leakage!</p>
+<p>pretty cool.</p>
+<p>authors go into some more examples over some of the confusion with argument names amongst all the modelss/packages. they also stress how parsnip attempts to have more explicit, and user friendly names.</p>
+<p>they give this example with <code>translate()</code> and state you can also use the help on the model so <code>?parsnip::rand_forest</code>.</p>
+<p>taking a look at the help doco myself- looks pretty useful actually. shows the different engines, and which is the default and then goes into the usual manpage stuff.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">interactive</span>()) {</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    ames <span class="ot">&lt;-</span> <span class="fu">read_ames</span>()</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(<span class="dv">502</span>)</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    ames_split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(ames, <span class="at">prop =</span> <span class="fl">0.80</span>, <span class="at">strata =</span> Sale_Price)</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    ames_train <span class="ot">&lt;-</span> <span class="fu">training</span>(ames_split)</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    ames_test  <span class="ot">&lt;-</span>  <span class="fu">testing</span>(ames_split) </span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># this shows the main arguments</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rand_forest</span>(<span class="at">trees =</span> <span class="dv">1000</span>, <span class="at">min_n =</span> <span class="dv">5</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_engine</span>(<span class="st">&quot;ranger&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_mode</span>(<span class="st">&quot;regression&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">translate</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Random Forest Model Specification (regression)
+
+Main Arguments:
+  trees = 1000
+  min_n = 5
+
+Computational engine: ranger 
+
+Model fit template:
+ranger::ranger(x = missing_arg(), y = missing_arg(), weights = missing_arg(), 
+    num.trees = 1000, min.node.size = min_rows(~5, x), num.threads = 1, 
+    verbose = FALSE, seed = sample.int(10^5, 1))</code></pre>
+</div>
+</div>
+<p>for the engine-specific stuff (e.g. specific only to ranger here) you can aff a verbose flag.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rand_forest</span>(<span class="at">trees =</span> <span class="dv">1000</span>, <span class="at">min_n =</span> <span class="dv">5</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_engine</span>(<span class="st">&quot;ranger&quot;</span>, <span class="at">verbose =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_mode</span>(<span class="st">&quot;regression&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">translate</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Random Forest Model Specification (regression)
+
+Main Arguments:
+  trees = 1000
+  min_n = 5
+
+Engine-Specific Arguments:
+  verbose = TRUE
+
+Computational engine: ranger 
+
+Model fit template:
+ranger::ranger(x = missing_arg(), y = missing_arg(), weights = missing_arg(), 
+    num.trees = 1000, min.node.size = min_rows(~5, x), verbose = TRUE, 
+    num.threads = 1, seed = sample.int(10^5, 1))</code></pre>
+</div>
+</div>
+<section id="extracting-results" class="level2">
+<h2 class="anchored" data-anchor-id="extracting-results">extracting results…</h2>
+<p>parsnip stores different parts of the model that users can extract.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>lm_form_fit <span class="sc">|&gt;</span> <span class="fu">extract_fit_engine</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+stats::lm(formula = Sale_Price ~ Longitude + Latitude, data = data)
+
+Coefficients:
+(Intercept)    Longitude     Latitude  
+ -128056769      -807916      1250927  </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">#then you can do all the usual stuff</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>lm_form_fit <span class="sc">|&gt;</span> <span class="fu">extract_fit_engine</span>() <span class="sc">|&gt;</span> <span class="fu">vcov</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              (Intercept)    Longitude      Latitude
+(Intercept)  4.305363e+13 327019204203 -295724926606
+Longitude    3.270192e+11   3436263877    -124601638
+Latitude    -2.957249e+11   -124601638    6757729689</code></pre>
+</div>
+</div>
+<p>that’s well and good but the base r summary stuff is hard to parse and you need different methods/functions to grab different bits. there is a <code>tidy()</code> method for that to get a tibble.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>parsnip<span class="sc">::</span><span class="fu">tidy</span>(lm_form_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 5
+  term           estimate std.error statistic  p.value
+  &lt;chr&gt;             &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+1 (Intercept) -128056769.  6561527.     -19.5 1.04e-78
+2 Longitude      -807916.    58620.     -13.8 1.31e-41
+3 Latitude       1250927.    82205.      15.2 6.19e-50</code></pre>
+</div>
+</div>
+<p>sweet it’s a tibble. very nice. I know how to interact with these.</p>
+</section>
+<section id="predictions" class="level2">
+<h2 class="anchored" data-anchor-id="predictions">predictions</h2>
+<p>authors go on to talk about <code>parsnip::predict()</code>. like everything else in this little universe of packages, it is consistent and predictable. I like it so far. they state:</p>
+<pre><code>1. the results are always a tibble
+1. the column names of the tibble are always predictable
+1. there are always as many rows in the tibble as there are in the input data set</code></pre>
+<p>they share this example:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>ames_test_small <span class="ot">&lt;-</span> ames_test <span class="sc">|&gt;</span> <span class="fu">slice</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(lm_form_fit, <span class="at">new_data=</span> ames_test_small)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 1
+    .pred
+    &lt;dbl&gt;
+1 185437.
+2 181256.
+3 210794.
+4 206454.
+5 208769.</code></pre>
+</div>
+</div>
+<p>so it looks like predict is still base r? but the output - because it is a parsnip object is diff? need ot check that….</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(lm_form_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] &quot;_lm&quot;       &quot;model_fit&quot;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>huh <span class="ot">&lt;-</span> <span class="fu">lm</span>(Sale_Price <span class="sc">~</span> Longitude <span class="sc">+</span> Latitude, <span class="at">data =</span> ames_train)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(huh, ames_test_small)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       1        2        3        4        5 
+185437.3 181256.3 210794.3 206454.3 208769.3 </code></pre>
+</div>
+</div>
+<p>oh yeah, look at that… grss it’s wide. or I forgot how to use the basic base r modeling stuff…</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>data_w_pred <span class="ot">&lt;-</span> </span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    ames_test_small <span class="sc">|&gt;</span> </span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Sale_Price) <span class="sc">|&gt;</span> </span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_cols</span>(<span class="fu">predict</span>(lm_form_fit, ames_test_small))</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>data_w_pred</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 2
+  Sale_Price   .pred
+       &lt;int&gt;   &lt;dbl&gt;
+1     105000 185437.
+2     244000 181256.
+3     189900 210794.
+4     191500 206454.
+5     189000 208769.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># now add 95% predication intervals to results</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>data_w_pred <span class="sc">|&gt;</span> </span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_cols</span>(<span class="fu">predict</span>(lm_form_fit, ames_test_small, <span class="at">type =</span> <span class="st">&quot;pred_int&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 4
+  Sale_Price   .pred .pred_lower .pred_upper
+       &lt;int&gt;   &lt;dbl&gt;       &lt;dbl&gt;       &lt;dbl&gt;
+1     105000 185437.      41998.     328876.
+2     244000 181256.      37818.     324695.
+3     189900 210794.      67346.     354243.
+4     191500 206454.      63004.     349904.
+5     189000 208769.      65329.     352210.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ^ surely there is a shortcut for that? nifty either way though</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>pretty cool. one advantage the authors talk about, with everything standardized, switching to other models is a breeze. it’s all the same syntax and you just swap out the engine/model type. basically plug and play.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>tree_model <span class="ot">&lt;-</span> </span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">decision_tree</span>(<span class="at">min_n =</span> <span class="dv">2</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># woah I used to use rpart before the pandemic</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># holy cow this is bringing me back....</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_engine</span>(<span class="st">&quot;rpart&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_mode</span>(<span class="st">&quot;regression&quot;</span>)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>tree_fit <span class="ot">&lt;-</span> </span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>    tree_model <span class="sc">|&gt;</span> </span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fit</span>(Sale_Price <span class="sc">~</span> Longitude <span class="sc">+</span> Latitude, <span class="at">data =</span> ames_train)</span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>ames_test_small <span class="sc">%&gt;%</span> </span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Sale_Price) <span class="sc">%&gt;%</span> </span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_cols</span>(<span class="fu">predict</span>(tree_fit, ames_test_small))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 2
+  Sale_Price   .pred
+       &lt;int&gt;   &lt;dbl&gt;
+1     105000 149998.
+2     244000 149998.
+3     189900 213223.
+4     191500 213223.
+5     189000 213223.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># look familiar -  woah that is neat</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>authors share this website for perusing all the diff modeals and such: <a href="explore%20tidy%20models">https://www.tidymodels.org/find/</a></p>
+<p>also there is an rstudio addin that gives a gui for some of this stuff. seems like it’s for rstudio. currently on positron…I wonder what happens if I run the line of code…</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># I think I creashed the interpreter....</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="co"># if (interactive()) parsnip_addin()</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="co"># gonna try this in rstudio now...</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="co"># okay im back. that&#39;s pretty cool in rstudio.</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 
