@@ -1,0 +1,210 @@
+---
+title: "Cahpter 6 - Fitting models with parsnip"
+format: 
+    html:
+        embed-resources: true
+---
+
+```{r setup}
+here::i_am(fs::path("tidy-modeling-with-r", "chapter-07.qmd"))
+library(here)
+source(here("tidy-modeling-with-r", "setup.R"))
+```
+
+Authors go into detail about `parsnip` package. which itself is a meta package like `tidymodels` and `tidyverse`.
+
+they walk through an example with the standard expected packages for a standard linear regression usecase.
+then they start to walk through the tidymodels approach detailed below:
+
+
+```{r standard-workflow}
+#| eval: false
+
+parsnip::linear_reg() %>% parsnip::set_engine("lm")
+parsnip::linear_reg() %>% parsnip::set_engine("glmnet") 
+parsnip::linear_reg() %>% parsnip::set_engine("stan")
+```
+
+so parsnip is an abstraction layer across the model landscape. 
+you can actually translate what parsnip is doing and see how it is
+translating parsnip semantics to the engine code beneath. 
+reminds me of `dbplyr::translate_sql()` or whatever that function is...
+
+
+```{r}
+linear_reg() %>% set_engine("lm") %>% translate()
+
+linear_reg(penalty = 1) %>% set_engine("glmnet") %>% translate()
+
+linear_reg() %>% set_engine("stan") %>% translate()
+```
+
+
+enough of the birdseye view - let's model the ames data
+
+
+```{r}
+lm_model <- 
+    linear_reg() |> 
+    set_engine("lm")
+# so I guess we set up the model beforehand - like a recipe?
+
+lm_form_fit <- 
+    lm_model |> 
+    # author notes that we should remember that we pre-logged the data
+    fit(Sale_Price ~ Longitude + Latitude, data = ames_train)
+
+lm_xy_fit <- 
+    lm_model |> 
+    fit_xy(
+        x = ames_train |> select(Longitude, Latitude),
+        y = ames_train |> pull(Sale_Price)
+    )
+
+    lm_form_fit
+    lm_xy_fit
+```
+
+pretty cool.
+
+
+authors go into some more examples over some of the confusion with argument names amongst all the modelss/packages.
+they also stress how parsnip attempts to have more explicit, and user friendly names.
+
+they give this example with `translate()` and state you can also use the help on the model so
+`?parsnip::rand_forest`.
+
+taking a look at the help doco myself- looks pretty useful actually. shows the different engines, and which is
+the default and then goes into the usual manpage stuff.
+
+```{r}
+# this shows the main arguments
+rand_forest(trees = 1000, min_n = 5) |> 
+    set_engine("ranger") |> 
+    set_mode("regression") |> 
+    translate()
+```
+
+for the engine-specific stuff (e.g. specific only to ranger here) you can aff a verbose flag.
+
+```{r}
+rand_forest(trees = 1000, min_n = 5) |> 
+    set_engine("ranger", verbose = TRUE) |> 
+    set_mode("regression") |> 
+    translate()
+```
+
+
+## extracting results...
+
+parsnip stores different parts of the model that users can extract.
+
+```{r}
+lm_form_fit |> extract_fit_engine()
+
+#then you can do all the usual stuff
+
+lm_form_fit |> extract_fit_engine() |> vcov()
+
+```
+
+that's well and good but the base r summary stuff is hard to parse
+and you need different methods/functions to grab different bits.
+there is a `tidy()` method for that to get a tibble.
+
+
+```{r}
+parsnip::tidy(lm_form_fit)
+```
+
+sweet it's a tibble. very nice. I know how to interact with these.
+
+## predictions
+
+authors go on to talk about `parsnip::predict()`. like everything else in this
+little universe of packages, it is consistent and predictable. I like it so far.
+they state:
+    
+    1. the results are always a tibble
+    1. the column names of the tibble are always predictable
+    1. there are always as many rows in the tibble as there are in the input data set
+
+they share this example:
+
+```{r}
+ames_test_small <- ames_test |> slice(1:5)
+predict(lm_form_fit, new_data= ames_test_small)
+```
+
+so it looks like predict is still base r? but the output - because it is a parsnip object is diff?
+need ot check that....
+
+
+```{r}
+class(lm_form_fit)
+huh <- lm(Sale_Price ~ Longitude + Latitude, data = ames_train)
+predict(huh, ames_test_small)
+```
+
+oh yeah, look at that... grss it's wide. or I forgot how to use the basic base r modeling stuff...
+
+
+
+```{r}
+data_w_pred <- 
+    ames_test_small |> 
+    select(Sale_Price) |> 
+    bind_cols(predict(lm_form_fit, ames_test_small))
+
+data_w_pred
+
+# now add 95% predication intervals to results
+
+data_w_pred |> 
+    bind_cols(predict(lm_form_fit, ames_test_small, type = "pred_int"))
+
+# ^ surely there is a shortcut for that? nifty either way though
+```
+
+
+pretty cool. one advantage the authors talk about, with everything standardized, switching to other 
+models is a breeze. it's all the same syntax and you just swap out the engine/model type.
+basically plug and play.
+
+
+```{r}
+tree_model <- 
+    decision_tree(min_n = 2) |> 
+    # woah I used to use rpart before the pandemic
+    # holy cow this is bringing me back....
+    set_engine("rpart") |> 
+    set_mode("regression")
+
+tree_fit <- 
+    tree_model |> 
+    fit(Sale_Price ~ Longitude + Latitude, data = ames_train)
+
+ames_test_small %>% 
+    select(Sale_Price) %>% 
+    bind_cols(predict(tree_fit, ames_test_small))
+# look familiar -  woah that is neat
+
+```
+
+
+authors share this website for perusing all the diff modeals and such: 
+[https://www.tidymodels.org/find/](explore tidy models)
+
+also there is an rstudio addin that gives a gui for some of this stuff.
+seems like it's for rstudio. currently on positron...I wonder what happens if I
+run the line of code...
+
+
+```{r}
+#| eval: false
+
+# I think I creashed the interpreter....
+# if (interactive()) parsnip_addin()
+# gonna try this in rstudio now...
+# okay im back. that's pretty cool in rstudio.
+```
