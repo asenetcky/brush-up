@@ -1,0 +1,12 @@
+---
+title: "Chapter 8 - Feature Engineering with recipes"
+format: 
+    html:
+        embed-resources: true
+---
+
+```{r setup}
+here::i_am(fs::path("tidy-modeling-with-r", "chapter-08.qmd"))
+library(here)
+source(here("tidy-modeling-with-r", "setup.R"))
+```
