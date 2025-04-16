@@ -1,0 +1,50 @@
+---
+title: "Untitled"
+format: html
+---
+
+
+```{r setup}
+use("tidyverse")
+use("tidymodels")
+tidymodels_prefer()
+
+data(ames)
+```
+
+
+
+```{r plotting}
+
+glimpse(ames)
+
+# median(ames$Sale_Price)
+summary(ames$Sale_Price)
+
+first <- 
+    ames |>
+    ggplot(aes(x = Sale_Price)) +
+    geom_histogram(bins = 50, col = "white")
+
+first
+```
+
+excerpt from book:
+    - This plot shows us that the data are right-skewed; there are more inexpensive houses than expensive ones.
+    -  When modeling this outcome, a strong argument can be made that the price should be log-transformed
+        - pros
+            - advantages of this type of transformation are that no houses would be predicted with negative sale prices 
+            - errors in predicting expensive houses will not have an undue influence on the model
+            -  from a statistical perspective, a logarithmic transform may also stabilize the variance in a way that makes inference more legitimate
+        - cons 
+            - The disadvantages of transforming the outcome mostly relate to interpretation of model results.
+
+```{r log_transform}
+first + scale_x_log10()
+
+my_ames <- 
+    ames |> 
+    mutate(Sale_Price = log10(Sale_Price))
+
+```
+
