@@ -1,6 +1,8 @@
 ---
-title: "Untitled"
-format: html
+title: "Chapter 4 - The Ames Housing Data"
+format: 
+    html:
+        embed-resources: true
 ---
 
 
@@ -42,9 +44,19 @@ excerpt from book:
 ```{r log_transform}
 first + scale_x_log10()
 
-my_ames <- 
+ames <- 
     ames |> 
     mutate(Sale_Price = log10(Sale_Price))
-
 ```
 
+
+```{r ames-to-parq}
+#| eval: false
+
+nanoparquet::write_parquet(
+    ames,
+    file = fs::path_wd("data", "ames", ext = "parquet"),
+    compression = "gzip"
+)
+
+```
