@@ -22,23 +22,9 @@ folks risk compounding biases and methodological errors, thus decreasing empiral
             the modeling process.
 
 ```{r setup}
-library(tidymodels)
-library(tidyverse)
-tidymodels_prefer()
-
-if (interactive()) {
-  fs::dir_ls(fs::path_wd("funs")) |> 
-    purrr::walk(
-        \(file) {
-            rlang::inform(glue::glue("Sourcing: {file}"))
-            source(file)
-        }
-    )  
-} else {
-    data(ames)
-    ames <- ames %>% mutate(Sale_Price = log10(Sale_Price))
-}
-
+here::i_am(fs::path("tidy-modeling-with-r", "chapter-07.qmd"))
+library(here)
+source(here("tidy-modeling-with-r", "setup.R"))
 ```
 
 
