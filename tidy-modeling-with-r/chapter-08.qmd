@@ -62,14 +62,14 @@ whereas `recipes()` uses `step_*` family of functions.
 
 
 ```{r}
-simples_ames <-
+simple_ames <-
   recipe(
     Sale_Price ~ Neighborhood + Gr_Liv_Area + Year_Built + Bldg_Type,
     data = ames_train
   ) |>
   step_log(Gr_Liv_Area, base = 10) |>
   step_dummy(all_nominal_predictors())
-simples_ames
+simple_ames
 
 ```
 
@@ -79,3 +79,157 @@ some advantages:
 - more preproc choices vs formula + package alone
 - syntax can be compact with the selector helpers
 - everything in one object
+  
+
+  lets try using a recipe with our old wflow
+
+
+```{r example-error}
+#| eval: false
+
+lm_wflow |>
+  add_recipe(simple_ames)
+
+```
+
+oh no doesn't work
+
+authors explain that you can
+only have one preproc method at a time
+and we did that one manually.
+
+lets fix it
+
+
+```{r}
+lm_wflow <-
+  lm_wflow |>
+  remove_variables() |>
+  add_recipe(simple_ames)
+
+lm_wflow
+
+```
+
+neat
+
+
+```{r}
+lm_fit <- fit(lm_wflow, ames_train)
+```
+
+
+the authors state that now, the `predict()` method will apply
+the exact same preprocessing that was used on the 
+training set to the new data before passing them along to
+the model's prediction method. that awesome, so it's
+deduplicating code. t
+
+my thoughts - he invisibility of it, is a little
+tough to wrap my head around BUT I think the enforced 
+standard and single point of entry
+forcing you to use good practice far outweighs that.
+
+
+lets predict
+
+
+```{r}
+predict(lm_fit, ames_test |> slice(1:3)) |> suppressWarnings()
+```
+
+
+extract_ funs can give us the bits and pieces
+
+```{r}
+lm_fit |>
+  extract_recipe(estimated = TRUE)
+
+```
+
+tidy up the model fit
+
+```{r}
+lm_fit |>
+  extract_fit_parsnip() |>
+  tidy() |>
+  slice(1:5)
+```
+
+recipes keep to only the training data - preventing leakage
+
+
+## example of recipe steps
+
+the authors give an example about common feature engineering
+tasks. so one example is basically factor lumping.
+so with the neighborhoods var, you have 2 levels that contain
+most of the data, and then a big middle, but there are some
+small `hoods with only 1 house etc.... those 
+can be lumped into "other" like the factor rollupstuff
+from forcats.
+
+
+```{r}
+
+simple_ames <-
+  recipe(
+    Sale_Price ~ Neighborhood + Gr_Liv_Area + Year_Built + Bldg_Type,
+    data = ames_train
+  ) %>%
+  step_log(Gr_Liv_Area, base = 10) %>%
+  step_other(Neighborhood, threshold = 0.01) %>%
+  step_dummy(all_nominal_predictors())
+
+# authors note that many but not all model calcs require
+# predictors to be numbers.
+# exception to this are -  treeobased, rulebased and naive bayes
+# models
+```
+
+authors go over the dummy columns for bldg_type var
+and the basic conventions, and how they are made a
+certain way in part because of the
+underlying matrix algebra.
+
+authors then go on to explain different types of preproc
+encoding and how different steps do different things
+and models have different needs.
+there are more args inside of the step_* funcs for
+more granularity. and often there is cleaner
+output like with var names when dummies are 
+created vs base r dummies.
+
+### interaction terms
+
+interaction effects involve two or more predictors.
+such an effect occurs when one predicotr has an effect
+on the outcome that is contingent on one of more
+other predictors.
+
+lets look living area vs bldg type and the resulting sale price
+
+```{r}
+ggplot(ames_train, aes(x = Gr_Liv_Area, y = 10^Sale_Price)) +
+  geom_point(alpha = .2) +
+  facet_wrap(~Bldg_Type) +
+  geom_smooth(method = lm, formula = y ~ x, se = FALSE, color = "lightblue") +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(x = "Gross Living Area", y = "Sale Price (USD)")
+```
+
+
+how are interactions specified in a recipe?
+
+in base r you can use : - but more commonly I've used *
+so it might look like the following:
+
+
+```{r}
+Sale_Price ~
+  Neighborhood + log10(Gr_Liv_Area) + Bldg_Type + log10(Gr_Liv_Area):Bldg_Type
+# or
+Sale_Price ~ Neighborhood + log10(Gr_Liv_Area) * Bldg_Type
+```
+
