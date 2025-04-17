@@ -10,3 +10,72 @@ here::i_am(fs::path("tidy-modeling-with-r", "chapter-08.qmd"))
 library(here)
 source(here("tidy-modeling-with-r", "setup.R"))
 ```
+
+feature engineering - authors give an example
+say you have two predictors that are better expressed as a ratio
+of these two. this is feature engineering.
+
+authors provide a few examples of preprocessing
+for better feature engineering:
+
+- Correlation between predictors can be reduced via feature extraction or the removal of some predictors.
+
+- When some predictors have missing values, they can be imputed using a sub-model.
+
+- Models that use variance-type measures may benefit from coercing the distribution of some skewed
+predictors to be symmetric by estimating a transformation.
+
+they note that different models have different preprocessing requirements
+and then some like tree-based models need almost nothing in terms of preproc.
+
+they list an appendix, appendix a in the back of the book
+
+## a simple `recipe()` for the ames housing data
+
+authors state that we'll be looking at the following predictors:
+
+- The neighborhood (qualitative, with 29 neighborhoods in the training set)
+
+-The gross above-grade living area (continuous, named Gr_Liv_Area)
+
+- The year built (Year_Built)
+
+- The type of building (Bldg_Type with values OneFam 
+(n=1,936), TwoFmCon (n=50), Duplex (n=88), Twnhs (n=77), and TwnhsE (n=191))
+
+They point out that traditionally we might've used an r formula like this:
+
+```{r}
+lm(
+  Sale_Price ~ Neighborhood + log10(Gr_Liv_Area) + Year_Built + Bldg_Type,
+  data = ames
+)
+```
+
+
+the authors then go through disecting what is happening with the 
+traditional formula.
+Some of it is obvious, some of it is not, like the invisible 
+non-numeric to numeric conversions.
+
+whereas `recipes()` uses `step_*` family of functions.
+
+
+```{r}
+simples_ames <-
+  recipe(
+    Sale_Price ~ Neighborhood + Gr_Liv_Area + Year_Built + Bldg_Type,
+    data = ames_train
+  ) |>
+  step_log(Gr_Liv_Area, base = 10) |>
+  step_dummy(all_nominal_predictors())
+simples_ames
+
+```
+
+wow thats incredible
+some advantages:
+- standardized and recyclable
+- more preproc choices vs formula + package alone
+- syntax can be compact with the selector helpers
+- everything in one object
