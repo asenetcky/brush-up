@@ -9,5 +9,215 @@ format:
 here::i_am(fs::path("tidy-modeling-with-r", "chapter-07.qmd"))
 library(here)
 source(here("tidy-modeling-with-r", "setup.R"))
-
 ```
+
+This chapter is about a workflow and its associated `workflow()` object.
+apparentally it's important for a couple of reasons:
+    
+    1. encourages good methodology since it is a single point of entry to the 
+    estimation components of a data analysis.
+    1. it enables to user to better organize projects.
+
+## where does the model begin and end?
+
+the authors stress that for some straight forward stuff, fitting the model is the whole game.
+but for other projects there might be some serious work and consideration before users
+ever get to that point.
+
+    - specific domains and smes might have to make serious consideration about which 
+    predictors to use/not use.
+    - important values may be missing - do you impute? can you impute? other methods to consider?
+    Authors say if *x1* was missing but correlated to *x2* and *x3*, youn could estimate the missing
+    *x1* ovservation from the values of *x2* and *x3*
+    - folks might want to weigh transforming the predictor scale. either *a priori* or
+    using a statistical trandofmration technique.
+    - there is talks about optimizing reducing false positive rates etc... and optimizing
+    for the data at hand, and the intended goals despite what the general best practice
+    might say.
+
+basically the the whole process should be considered. the authors state the book is designed to
+focus on this sort of whole - holistic process.
+
+
+authors talk more about mindset etc...
+
+## workflow basics
+
+```{r}
+lm_wflow <- 
+    workflows::workflow() |> 
+    workflows::add_model(lm_model) #lm_model is called in the sourcing of setup.R
+
+lm_wflow
+```
+
+authors point out that no prepocessor was added.
+a standard r formula can be used as a preprocssor.
+
+
+```{r}
+lm_wflow <- 
+    lm_wflow %>% 
+    add_formula(Sale_Price ~ Longitude + Latitude)
+
+lm_wflow
+```
+
+workflows can have a `fit()`
+
+```{r}
+
+# notice the workflow object is put into fit. interesting.
+lm_fit <- fit(lm_wflow, ames_train)
+```
+
+
+they can also have a `predict()` added on
+
+```{r}
+predict(lm_fit, ames_test |> slice(1:3))
+```
+
+the workflows can be up[dated and have bits and pieces added or removed.
+
+```{r}
+lm_fit |> update_formula(Sale_Price ~ Longitude)
+```
+
+
+## adding raw variables to `workflow()`
+
+
+```{r}
+lm_wflow <- 
+    lm_wflow %>% 
+    remove_formula() %>% 
+    add_variables(
+        outcome = Sale_Price, 
+        # predictors = c(Longitude, Latitude))
+        predictors = c(ends_with("tude")) #pretty cool
+        # if you accidentally use everything(), outcome columns are automatically dropped 
+        # from predictors
+    )
+lm_wflow
+```
+
+
+
+```{r}
+fit(lm_wflow, ames_train)
+```
+
+## how does a workflow use the formula?
+
+the authors go onb about the r formula can be used to make the data analysis-ready.
+users can do inline transformations, create dummary vars etc...
+they stress some packages expect certain things, but don't actually perform these steps for the user
+some packages might have special functions that need to be used in the formula
+or the formula itself is special and extended and not compatible with base r.
+
+its alot for users to parse though.
+
+the authors state that `add_formula()` will try and emulate what the underlying model would do, whenever possioble.
+if not possible, the formula processing will do anything to the cols.
+
+### tree based model examples
+
+authors state that `ranger` and `randomForest` packages know that predictor columns that are factors should
+be left as is.
+
+however, they go on and state that a boosted tree with `xgboost` requires thse users create
+dummy var from factor predictors.
+this requirement is embedded into the model spec object and a workflow wrill create the indicator columns
+for this engine. the determination is made for each model and engine combo.
+
+they show a special formula example that cannot be parsed by base R. and offers up the `add_model()`
+function where users can enter the package/model specific formula to the workflow.
+
+
+## creating multiple workflows at once
+
+sometimes there are unqiue situations where you need to evalute a variety of models, or
+the same one opver and over, but with each iteration a predictor is stripped out so
+each predictor can be "isolated and assessed".
+
+an example:
+
+we can create a set of formulas:
+
+```{r}
+location <- 
+    list(
+        longitude = Sale_Price ~ Longitude,
+        latitude = Sale_Price ~ Latitude,
+        coords = Sale_Price ~ Longitude + Latitude,
+        neighborhood = Sale_Price ~ Neighborhood
+    )
+```
+
+then we can use the `workflow_set()` function
+
+```{r}
+library(workflowsets)
+location_models <- workflow_set(preproc = location, models = list(lm = lm_model))
+location_models
+```
+
+
+```{r}
+location_models$info[[1]]
+workflowsets::extract_workflow(location_models, id = "coords_lm")
+```
+
+
+lets create model fits for each formula and save them into a new col
+called fit.
+
+
+```{r}
+location_models <- 
+    location_models |> 
+    mutate(
+        fit = map(
+            info,
+            \(x) fit(x$workflow[[1]], ames_train)
+        )
+    )
+
+    location_models
+    location_models$fit[[1]]
+```
+
+the author states that purrr was used here - however, there is an easier and better approach they'll cover in chapter 11.
+
+
+## evaluating the test set
+
+author asks us to pretend we have settled on a final model. they
+state there is a convenience function called `last_fit()`
+
+last fit will fit the model the the entire training set and evauluate it with the testing set.
+
+example:
+
+```{r}
+final_lm_res <- last_fit(lm_wflow, ames_split)
+final_lm_res
+```
+
+notice that it takes the split, and not a dataframe. so no cheating or data leakage.
+
+```{r}
+fitted_lm_wflow <- extract_workflow(final_lm_res)
+fitted_lm_wflow
+```
+
+
+
+```{r}
+collect_metrics(final_lm_res)
+collect_predictions(final_lm_res) %>% slice(1:5)
+```
+
+verbatim from authors:
+When using validation sets, last_fit() has an argument called add_validation_set to specify if we should train the final model solely on the training set (the default) or the combination of the training and validation sets.

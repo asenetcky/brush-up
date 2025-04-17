@@ -3144,31 +3144,322 @@ vertical-align: -.125em;
 ✖ readr::spec()       masks yardstick::spec()
 ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># library(tidymodels)</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># library(tidyverse)</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># tidymodels_prefer()</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># if (interactive()) {</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#     fs::dir_ls(fs::path_wd(&quot;funs&quot;)) |&gt; </span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">#         purrr::walk(</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">#             \(file) {</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">#                 rlang::inform(glue::glue(&quot;Sourcing: {file}&quot;))</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                 source(file)</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">#             }</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co">#         )  </span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">#     ames &lt;- read_ames()</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co"># } else {</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="co">#     data(ames)</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">#     ames &lt;- ames %&gt;% mutate(Sale_Price = log10(Sale_Price))</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="co"># }</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed(502)</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co"># ames_split &lt;- initial_split(ames, prop = 0.80, strata = Sale_Price)</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co"># ames_train &lt;- training(ames_split)</span></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co"># ames_test  &lt;-  testing(ames_split)</span></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co"># lm_model &lt;- linear_reg() %&gt;% set_engine(&quot;lm&quot;)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>This chapter is about a workflow and its associated <code>workflow()</code> object. apparentally it’s important for a couple of reasons:</p>
+<pre><code>1. encourages good methodology since it is a single point of entry to the 
+estimation components of a data analysis.
+1. it enables to user to better organize projects.</code></pre>
+<section id="where-does-the-model-begin-and-end" class="level2">
+<h2 class="anchored" data-anchor-id="where-does-the-model-begin-and-end">where does the model begin and end?</h2>
+<p>the authors stress that for some straight forward stuff, fitting the model is the whole game. but for other projects there might be some serious work and consideration before users ever get to that point.</p>
+<pre><code>- specific domains and smes might have to make serious consideration about which 
+predictors to use/not use.
+- important values may be missing - do you impute? can you impute? other methods to consider?
+Authors say if *x1* was missing but correlated to *x2* and *x3*, youn could estimate the missing
+*x1* ovservation from the values of *x2* and *x3*
+- folks might want to weigh transforming the predictor scale. either *a priori* or
+using a statistical trandofmration technique.
+- there is talks about optimizing reducing false positive rates etc... and optimizing
+for the data at hand, and the intended goals despite what the general best practice
+might say.</code></pre>
+<p>basically the the whole process should be considered. the authors state the book is designed to focus on this sort of whole - holistic process.</p>
+<p>authors talk more about mindset etc…</p>
+</section>
+<section id="workflow-basics" class="level2">
+<h2 class="anchored" data-anchor-id="workflow-basics">workflow basics</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>lm_wflow <span class="ot">&lt;-</span> </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    workflows<span class="sc">::</span><span class="fu">workflow</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    workflows<span class="sc">::</span><span class="fu">add_model</span>(lm_model) <span class="co">#lm_model is called in the sourcing of setup.R</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>lm_wflow</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: None
+Model: linear_reg()
+
+── Model ───────────────────────────────────────────────────────────────────────
+Linear Regression Model Specification (regression)
+
+Computational engine: lm </code></pre>
+</div>
+</div>
+<p>authors point out that no prepocessor was added. a standard r formula can be used as a preprocssor.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>lm_wflow <span class="ot">&lt;-</span> </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    lm_wflow <span class="sc">%&gt;%</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_formula</span>(Sale_Price <span class="sc">~</span> Longitude <span class="sc">+</span> Latitude)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>lm_wflow</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: Formula
+Model: linear_reg()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+Sale_Price ~ Longitude + Latitude
+
+── Model ───────────────────────────────────────────────────────────────────────
+Linear Regression Model Specification (regression)
+
+Computational engine: lm </code></pre>
+</div>
+</div>
+<p>workflows can have a <code>fit()</code></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># notice the workflow object is put into fit. interesting.</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>lm_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(lm_wflow, ames_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>they can also have a <code>predict()</code> added on</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(lm_fit, ames_test <span class="sc">|&gt;</span> <span class="fu">slice</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 1
+    .pred
+    &lt;dbl&gt;
+1 185437.
+2 181256.
+3 210794.</code></pre>
+</div>
+</div>
+<p>the workflows can be up[dated and have bits and pieces added or removed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>lm_fit <span class="sc">|&gt;</span> <span class="fu">update_formula</span>(Sale_Price <span class="sc">~</span> Longitude)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: Formula
+Model: linear_reg()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+Sale_Price ~ Longitude
+
+── Model ───────────────────────────────────────────────────────────────────────
+Linear Regression Model Specification (regression)
+
+Computational engine: lm </code></pre>
+</div>
+</div>
+</section>
+<section id="adding-raw-variables-to-workflow" class="level2">
+<h2 class="anchored" data-anchor-id="adding-raw-variables-to-workflow">adding raw variables to <code>workflow()</code></h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>lm_wflow <span class="ot">&lt;-</span> </span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    lm_wflow <span class="sc">%&gt;%</span> </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">remove_formula</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_variables</span>(</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">outcome =</span> Sale_Price, </span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>        <span class="co"># predictors = c(Longitude, Latitude))</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>        <span class="at">predictors =</span> <span class="fu">c</span>(<span class="fu">ends_with</span>(<span class="st">&quot;tude&quot;</span>)) <span class="co">#pretty cool</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>        <span class="co"># if you accidentally use everything(), outcome columns are automatically dropped </span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># from predictors</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>lm_wflow</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: Variables
+Model: linear_reg()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+Outcomes: Sale_Price
+Predictors: c(ends_with(&quot;tude&quot;))
+
+── Model ───────────────────────────────────────────────────────────────────────
+Linear Regression Model Specification (regression)
+
+Computational engine: lm </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fit</span>(lm_wflow, ames_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow [trained] ══════════════════════════════════════════════════════════
+Preprocessor: Variables
+Model: linear_reg()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+Outcomes: Sale_Price
+Predictors: c(ends_with(&quot;tude&quot;))
+
+── Model ───────────────────────────────────────────────────────────────────────
+
+Call:
+stats::lm(formula = ..y ~ ., data = data)
+
+Coefficients:
+(Intercept)    Longitude     Latitude  
+ -128056769      -807916      1250927  </code></pre>
+</div>
+</div>
+</section>
+<section id="how-does-a-workflow-use-the-formula" class="level2">
+<h2 class="anchored" data-anchor-id="how-does-a-workflow-use-the-formula">how does a workflow use the formula?</h2>
+<p>the authors go onb about the r formula can be used to make the data analysis-ready. users can do inline transformations, create dummary vars etc… they stress some packages expect certain things, but don’t actually perform these steps for the user some packages might have special functions that need to be used in the formula or the formula itself is special and extended and not compatible with base r.</p>
+<p>its alot for users to parse though.</p>
+<p>the authors state that <code>add_formula()</code> will try and emulate what the underlying model would do, whenever possioble. if not possible, the formula processing will do anything to the cols.</p>
+<section id="tree-based-model-examples" class="level3">
+<h3 class="anchored" data-anchor-id="tree-based-model-examples">tree based model examples</h3>
+<p>authors state that <code>ranger</code> and <code>randomForest</code> packages know that predictor columns that are factors should be left as is.</p>
+<p>however, they go on and state that a boosted tree with <code>xgboost</code> requires thse users create dummy var from factor predictors. this requirement is embedded into the model spec object and a workflow wrill create the indicator columns for this engine. the determination is made for each model and engine combo.</p>
+<p>they show a special formula example that cannot be parsed by base R. and offers up the <code>add_model()</code> function where users can enter the package/model specific formula to the workflow.</p>
+</section>
+</section>
+<section id="creating-multiple-workflows-at-once" class="level2">
+<h2 class="anchored" data-anchor-id="creating-multiple-workflows-at-once">creating multiple workflows at once</h2>
+<p>sometimes there are unqiue situations where you need to evalute a variety of models, or the same one opver and over, but with each iteration a predictor is stripped out so each predictor can be “isolated and assessed”.</p>
+<p>an example:</p>
+<p>we can create a set of formulas:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>location <span class="ot">&lt;-</span> </span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">longitude =</span> Sale_Price <span class="sc">~</span> Longitude,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">latitude =</span> Sale_Price <span class="sc">~</span> Latitude,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>        <span class="at">coords =</span> Sale_Price <span class="sc">~</span> Longitude <span class="sc">+</span> Latitude,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>        <span class="at">neighborhood =</span> Sale_Price <span class="sc">~</span> Neighborhood</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>then we can use the <code>workflow_set()</code> function</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(workflowsets)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>location_models <span class="ot">&lt;-</span> <span class="fu">workflow_set</span>(<span class="at">preproc =</span> location, <span class="at">models =</span> <span class="fu">list</span>(<span class="at">lm =</span> lm_model))</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>location_models</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A workflow set/tibble: 4 × 4
+  wflow_id        info             option    result    
+  &lt;chr&gt;           &lt;list&gt;           &lt;list&gt;    &lt;list&gt;    
+1 longitude_lm    &lt;tibble [1 × 4]&gt; &lt;opts[0]&gt; &lt;list [0]&gt;
+2 latitude_lm     &lt;tibble [1 × 4]&gt; &lt;opts[0]&gt; &lt;list [0]&gt;
+3 coords_lm       &lt;tibble [1 × 4]&gt; &lt;opts[0]&gt; &lt;list [0]&gt;
+4 neighborhood_lm &lt;tibble [1 × 4]&gt; &lt;opts[0]&gt; &lt;list [0]&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>location_models<span class="sc">$</span>info[[<span class="dv">1</span>]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+  workflow   preproc model      comment
+  &lt;list&gt;     &lt;chr&gt;   &lt;chr&gt;      &lt;chr&gt;  
+1 &lt;workflow&gt; formula linear_reg &quot;&quot;     </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>workflowsets<span class="sc">::</span><span class="fu">extract_workflow</span>(location_models, <span class="at">id =</span> <span class="st">&quot;coords_lm&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: Formula
+Model: linear_reg()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+Sale_Price ~ Longitude + Latitude
+
+── Model ───────────────────────────────────────────────────────────────────────
+Linear Regression Model Specification (regression)
+
+Computational engine: lm </code></pre>
+</div>
+</div>
+<p>lets create model fits for each formula and save them into a new col called fit.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>location_models <span class="ot">&lt;-</span> </span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    location_models <span class="sc">|&gt;</span> </span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">fit =</span> <span class="fu">map</span>(</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>            info,</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>            \(x) <span class="fu">fit</span>(x<span class="sc">$</span>workflow[[<span class="dv">1</span>]], ames_train)</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    location_models</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A workflow set/tibble: 4 × 5
+  wflow_id        info             option    result     fit       
+  &lt;chr&gt;           &lt;list&gt;           &lt;list&gt;    &lt;list&gt;     &lt;list&gt;    
+1 longitude_lm    &lt;tibble [1 × 4]&gt; &lt;opts[0]&gt; &lt;list [0]&gt; &lt;workflow&gt;
+2 latitude_lm     &lt;tibble [1 × 4]&gt; &lt;opts[0]&gt; &lt;list [0]&gt; &lt;workflow&gt;
+3 coords_lm       &lt;tibble [1 × 4]&gt; &lt;opts[0]&gt; &lt;list [0]&gt; &lt;workflow&gt;
+4 neighborhood_lm &lt;tibble [1 × 4]&gt; &lt;opts[0]&gt; &lt;list [0]&gt; &lt;workflow&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>    location_models<span class="sc">$</span>fit[[<span class="dv">1</span>]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow [trained] ══════════════════════════════════════════════════════════
+Preprocessor: Formula
+Model: linear_reg()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+Sale_Price ~ Longitude
+
+── Model ───────────────────────────────────────────────────────────────────────
+
+Call:
+stats::lm(formula = ..y ~ ., data = data)
+
+Coefficients:
+(Intercept)    Longitude  
+  -73314956      -784851  </code></pre>
+</div>
+</div>
+<p>the author states that purrr was used here - however, there is an easier and better approach they’ll cover in chapter 11.</p>
+</section>
+<section id="evaluating-the-test-set" class="level2">
+<h2 class="anchored" data-anchor-id="evaluating-the-test-set">evaluating the test set</h2>
+<p>author asks us to pretend we have settled on a final model. they state there is a convenience function called <code>last_fit()</code></p>
+<p>last fit will fit the model the the entire training set and evauluate it with the testing set.</p>
+<p>example:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>final_lm_res <span class="ot">&lt;-</span> <span class="fu">last_fit</span>(lm_wflow, ames_split)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>final_lm_res</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># Resampling results
+# Manual resampling 
+# A tibble: 1 × 6
+  splits             id               .metrics .notes   .predictions .workflow 
+  &lt;list&gt;             &lt;chr&gt;            &lt;list&gt;   &lt;list&gt;   &lt;list&gt;       &lt;list&gt;    
+1 &lt;split [2342/588]&gt; train/test split &lt;tibble&gt; &lt;tibble&gt; &lt;tibble&gt;     &lt;workflow&gt;</code></pre>
+</div>
+</div>
+<p>notice that it takes the split, and not a dataframe. so no cheating or data leakage.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>fitted_lm_wflow <span class="ot">&lt;-</span> <span class="fu">extract_workflow</span>(final_lm_res)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>fitted_lm_wflow</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow [trained] ══════════════════════════════════════════════════════════
+Preprocessor: Variables
+Model: linear_reg()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+Outcomes: Sale_Price
+Predictors: c(ends_with(&quot;tude&quot;))
+
+── Model ───────────────────────────────────────────────────────────────────────
+
+Call:
+stats::lm(formula = ..y ~ ., data = data)
+
+Coefficients:
+(Intercept)    Longitude     Latitude  
+ -128056769      -807916      1250927  </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_metrics</span>(final_lm_res)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 4
+  .metric .estimator .estimate .config             
+  &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt;               
+1 rmse    standard   75446.    Preprocessor1_Model1
+2 rsq     standard       0.164 Preprocessor1_Model1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_predictions</span>(final_lm_res) <span class="sc">%&gt;%</span> <span class="fu">slice</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 5
+    .pred id                .row Sale_Price .config             
+    &lt;dbl&gt; &lt;chr&gt;            &lt;int&gt;      &lt;int&gt; &lt;chr&gt;               
+1 185437. train/test split     2     105000 Preprocessor1_Model1
+2 181256. train/test split     4     244000 Preprocessor1_Model1
+3 210794. train/test split     5     189900 Preprocessor1_Model1
+4 206454. train/test split     8     191500 Preprocessor1_Model1
+5 208769. train/test split    10     189000 Preprocessor1_Model1</code></pre>
+</div>
+</div>
+<p>verbatim from authors: When using validation sets, last_fit() has an argument called add_validation_set to specify if we should train the final model solely on the training set (the default) or the combination of the training and validation sets.</p>
+</section>
 
 </main>
 <!-- /main column -->
