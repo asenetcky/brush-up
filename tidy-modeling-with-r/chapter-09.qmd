@@ -6,7 +6,216 @@ format:
 ---
 
 ```{r setup}
-here::i_am(fs::path("tidy-modeling-with-r", "chapter-XX.qmd"))
+here::i_am(fs::path("tidy-modeling-with-r", "chapter-09.qmd"))
 library(here)
 source(here("tidy-modeling-with-r", "setup.R"))
 ```
+
+
+okay so now we have a model. now what - let's see how it stacks up.
+no bs - let's use empirical evidence. no using data used to create the
+model we're stick with out small test subset and only using it *once*.
+
+lots of theory in this chapter. showcasing how important it is
+in choosing your metrics.
+the authors showed two common metrics for regression models
+root mean squared error (RMSE) and coefficient of determination (r^2).
+they loot similiar when ploted but the former is a measure of 
+accuracy, while the latter measures correlation.
+
+the author goes into a big example to sort of drive the look
+at the big picture point home.
+
+## regression metrics
+
+we're going to use the `yardstick` package and it has a consistent
+function format
+
+`function(data, truth, ...)`
+
+truth is the col with the observed outcome value
+
+we're going to use the data we have as an example.
+
+> we *will* be using test data at this point
+> however, in normal use do **not** do this
+> at this point under normal circumstances
+
+```{r}
+ames_test_res <- predict(lm_fit, new_data = select(ames_test, -Sale_Price))
+ames_test_res
+```
+
+
+let match the preds with the observed
+
+```{r}
+ames_test_res <-
+  bind_cols(
+    ames_test_res,
+    select(ames_test, Sale_Price)
+  )
+ames_test_res
+```
+
+
+you'll notice everything is still log10 scale. which is good
+it's best to compare with both values using the same scale.
+
+lets plot before we even consider the standard metrics
+
+```{r}
+ggplot(ames_test_res, aes(x = Sale_Price, y = .pred)) +
+  # Create a diagonal line:
+  geom_abline(lty = 2) + # lty for lintetype, for dotted line
+  geom_point(alpha = 0.5) +
+  labs(y = "Predicted Sale Price (log10)", x = "Sale Price (log10)") +
+  # Scale and size the x- and y-axis uniformly:
+  coord_obs_pred()
+```
+
+i dunno if they go over vetiver or pins or anything in this.
+however the author notes that the tail ends of the model
+don't quite predict as well. and I was just thinking how
+that would be great doco for the model with the model card.
+like hey this model is great for the middle but performs
+poorly at these cutoffs etc...
+
+alrighty, now lets compute some metrics...
+
+```{r rmse}
+# rmse
+
+rmse(ames_test_res, truth = Sale_Price, estimate = .pred)
+
+```
+
+that was easy enough.
+
+author makes note of the `"standard"` in the estimator column.
+and notes that there are others types as well.
+
+cool, you can create a whole metric set.
+
+I can see where this is all headed  - create whole model
+factories. just shoot data through a ton of predefined models 
+and recipes and have your metrics all picked out. good stuff.
+
+```{r}
+ames_metrics <- metric_set(rmse, rsq, mae)
+
+ames_metrics(ames_test_res, truth = Sale_Price, estimate = .pred)
+```
+
+authors state that yardstick doesnt include adjusted *R*^2 
+because it uses the same to fit the model as it does to evaluate the model.
+and its always better to keep separate/ better metrics available.
+
+## binary classification metrics
+
+```{r}
+data(two_class_example)
+tibble(two_class_example)
+```
+
+example^ 
+class1 and class2 are class predictions
+predicted is the ahrd prediction
+
+
+yardstick has a *nice* suite of tools 
+for these kinds of things
+
+```{r}
+# A confusion matrix:
+conf_mat(two_class_example, truth = truth, estimate = predicted)
+#>           Truth
+#> Prediction Class1 Class2
+#>     Class1    227     50
+#>     Class2     31    192
+
+# Accuracy:
+accuracy(two_class_example, truth, predicted)
+#> # A tibble: 1 × 3
+#>   .metric  .estimator .estimate
+#>   <chr>    <chr>          <dbl>
+#> 1 accuracy binary         0.838
+
+# Matthews correlation coefficient:
+mcc(two_class_example, truth, predicted)
+#> # A tibble: 1 × 3
+#>   .metric .estimator .estimate
+#>   <chr>   <chr>          <dbl>
+#> 1 mcc     binary         0.677
+
+# F1 metric:
+f_meas(two_class_example, truth, predicted)
+#> # A tibble: 1 × 3
+#>   .metric .estimator .estimate
+#>   <chr>   <chr>          <dbl>
+#> 1 f_meas  binary         0.849
+
+# Combining these three classification metrics together
+classification_metrics <- metric_set(accuracy, mcc, f_meas)
+classification_metrics(two_class_example, truth = truth, estimate = predicted)
+#> # A tibble: 3 × 3
+#>   .metric  .estimator .estimate
+#>   <chr>    <chr>          <dbl>
+#> 1 accuracy binary         0.838
+#> 2 mcc      binary         0.677
+#> 3 f_meas   binary         0.849
+```
+
+that is slick. keep what you want, and nothing else.
+
+auc and roc
+
+```{r}
+two_class_curve <- roc_curve(two_class_example, truth, Class1)
+two_class_curve
+#> # A tibble: 502 × 3
+#>   .threshold specificity sensitivity
+#>        <dbl>       <dbl>       <dbl>
+#> 1 -Inf           0                 1
+#> 2    1.79e-7     0                 1
+#> 3    4.50e-6     0.00413           1
+#> 4    5.81e-6     0.00826           1
+#> 5    5.92e-6     0.0124            1
+#> 6    1.22e-5     0.0165            1
+#> # ℹ 496 more rows
+
+roc_auc(two_class_example, truth, Class1)
+#> # A tibble: 1 × 3
+#>   .metric .estimator .estimate
+#>   <chr>   <chr>          <dbl>
+#> 1 roc_auc binary         0.939
+```
+
+```{r}
+autoplot(two_class_curve)
+```
+
+what about more than 2 classes?
+
+```{r}
+data(hpc_cv)
+tibble(hpc_cv)
+```
+
+so even with multi classes everything is basically the same:
+
+```{r}
+accuracy(hpc_cv, obs, pred)
+#> # A tibble: 1 × 3
+#>   .metric  .estimator .estimate
+#>   <chr>    <chr>          <dbl>
+#> 1 accuracy multiclass     0.709
+
+mcc(hpc_cv, obs, pred)
+#> # A tibble: 1 × 3
+#>   .metric .estimator .estimate
+#>   <chr>   <chr>          <dbl>
+#> 1 mcc     multiclass     0.515
+```
+
+however .estimator changes.
