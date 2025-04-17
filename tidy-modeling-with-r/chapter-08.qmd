@@ -105,6 +105,7 @@ lets fix it
 lm_wflow <-
   lm_wflow |>
   remove_variables() |>
+  remove_recipe() |>
   add_recipe(simple_ames)
 
 lm_wflow
@@ -370,6 +371,7 @@ so folks could use
 
 
 ```{r}
+#| eval: false
 step_pca(matches("(SF$)|(Gr_Liv)"))
 ```
 
