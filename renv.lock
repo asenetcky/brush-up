@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.5.0",
+    "Version": "4.4.3",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -186,11 +186,11 @@
     },
     "MASS": {
       "Package": "MASS",
-      "Version": "7.3-65",
+      "Version": "7.3-64",
       "Source": "Repository",
       "Priority": "recommended",
-      "Date": "2025-02-19",
-      "Revision": "$Rev: 3681 $",
+      "Date": "2025-01-06",
+      "Revision": "$Rev: 3680 $",
       "Depends": [
         "R (>= 4.4.0)",
         "grDevices",
@@ -222,10 +222,10 @@
     },
     "Matrix": {
       "Package": "Matrix",
-      "Version": "1.7-3",
+      "Version": "1.7-2",
       "Source": "Repository",
       "VersionNote": "do also bump src/version.h, inst/include/Matrix/version.h",
-      "Date": "2025-03-05",
+      "Date": "2025-01-20",
       "Priority": "recommended",
       "Title": "Sparse and Dense Matrix Classes and Methods",
       "Description": "A rich hierarchy of sparse and dense matrix classes, including general, symmetric, triangular, and diagonal matrices with numeric, logical, or pattern entries.  Efficient methods for operating on such matrices, often wrapping the 'BLAS', 'LAPACK', and 'SuiteSparse' libraries.",
@@ -3186,7 +3186,7 @@
     },
     "httpuv": {
       "Package": "httpuv",
-      "Version": "1.6.15",
+      "Version": "1.6.16",
       "Source": "Repository",
       "Type": "Package",
       "Title": "HTTP and WebSocket Server Library",
@@ -3208,6 +3208,7 @@
       "Suggests": [
         "callr",
         "curl",
+        "jsonlite",
         "testthat",
         "websocket"
       ],
@@ -3216,7 +3217,7 @@
         "Rcpp"
       ],
       "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.1",
+      "RoxygenNote": "7.3.2",
       "SystemRequirements": "GNU make, zlib",
       "Collate": "'RcppExports.R' 'httpuv.R' 'random_port.R' 'server.R' 'staticServer.R' 'static_paths.R' 'utils.R'",
       "NeedsCompilation": "yes",
@@ -4499,9 +4500,9 @@
     },
     "nlme": {
       "Package": "nlme",
-      "Version": "3.1-168",
+      "Version": "3.1-167",
       "Source": "Repository",
-      "Date": "2025-03-31",
+      "Date": "2025-01-27",
       "Priority": "recommended",
       "Title": "Linear and Nonlinear Mixed Effects Models",
       "Authors@R": "c(person(\"José\", \"Pinheiro\", role = \"aut\", comment = \"S version\"), person(\"Douglas\", \"Bates\", role = \"aut\", comment = \"up to 2007\"), person(\"Saikat\", \"DebRoy\", role = \"ctb\", comment = \"up to 2002\"), person(\"Deepayan\", \"Sarkar\", role = \"ctb\", comment = \"up to 2005\"), person(\"EISPACK authors\", role = \"ctb\", comment = \"src/rs.f\"), person(\"Siem\", \"Heisterkamp\", role = \"ctb\", comment = \"Author fixed sigma\"), person(\"Bert\", \"Van Willigen\",role = \"ctb\", comment = \"Programmer fixed sigma\"), person(\"Johannes\", \"Ranke\", role = \"ctb\", comment = \"varConstProp()\"), person(\"R Core Team\", email = \"R-core@R-project.org\", role = c(\"aut\", \"cre\"), comment = c(ROR = \"02zz1nj61\")))",
