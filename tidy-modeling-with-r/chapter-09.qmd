@@ -1,0 +1,12 @@
+---
+title: "Chapter 09 - Judging Model Effectiveness"
+format: 
+    html:
+        embed-resources: true
+---
+
+```{r setup}
+here::i_am(fs::path("tidy-modeling-with-r", "chapter-XX.qmd"))
+library(here)
+source(here("tidy-modeling-with-r", "setup.R"))
+```
