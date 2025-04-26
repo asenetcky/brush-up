@@ -10,3 +10,77 @@ here::i_am(fs::path("tidy-modeling-with-r", "chapter-10.qmd"))
 library(here)
 source(here("tidy-modeling-with-r", "setup.R"))
 ```
+
+## redistribution approach
+
+random trees are an ensemble method creates large numbers of decision trees
+of varied versions of training set that make separate predictions
+and then are averaged together.
+
+
+> random forests are powerful and emulate underlying patterns
+> closely.  However they are computationally expensive BUT
+> they require very little maintenance or preprocessing.
+
+
+
+```{r}
+
+rf_model <-
+  rand_forest(trees = 1000) |>
+  set_engine("ranger") |>
+  set_mode("regression")
+
+rf_wflow <-
+  workflow() |>
+  add_formula(
+    Sale_Price ~
+      Neighborhood + Gr_Liv_Area + Year_Built + Bldg_Type + Latitude + Longitude
+  ) |>
+  add_model(rf_model)
+
+rf_fit <- rf_wflow |> fit(data = ames_train)
+```
+
+
+how do we compare our linear vs our random forest model?
+
+create `apparent metric` or `resubstitution metric`
+
+
+```{r}
+estimate_perf <- function(model, dat) {
+  # Capture the names of the `model` and `dat` objects
+  cl <- match.call()
+  obj_name <- as.character(cl$model)
+  data_name <- as.character(cl$dat)
+  data_name <- gsub("ames_", "", data_name)
+
+  # Estimate these metrics:
+  reg_metrics <- metric_set(rmse, rsq)
+
+  model %>%
+    predict(dat) %>%
+    bind_cols(dat %>% select(Sale_Price)) %>%
+    reg_metrics(Sale_Price, .pred) %>%
+    select(-.estimator) %>%
+    mutate(object = obj_name, data = data_name)
+}
+```
+
+
+
+```{r}
+estimate_perf(rf_fit, ames_train)
+#> # A tibble: 2 × 4
+#>   .metric .estimate object data
+#>   <chr>       <dbl> <chr>  <chr>
+#> 1 rmse       0.0365 rf_fit train
+#> 2 rsq        0.960  rf_fit train
+estimate_perf(lm_fit, ames_train)
+#> # A tibble: 2 × 4
+#>   .metric .estimate object data
+#>   <chr>       <dbl> <chr>  <chr>
+#> 1 rmse       0.0754 lm_fit train
+#> 2 rsq        0.816  lm_fit train
+```
